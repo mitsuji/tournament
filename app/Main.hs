@@ -2,76 +2,120 @@
 
 module Main where
 
+-- import for Functional
+import Mitsuji.Tournament.Functional ((><),(==>))
+import qualified Mitsuji.Tournament.Functional as TF
+
+-- import for Procedural
 import Control.Monad.ST (ST,runST,stToIO)
-import Data.STRef (STRef,newSTRef,readSTRef,writeSTRef)
-import qualified Data.Text as T
-
+import qualified Mitsuji.Tournament.Procedural as TP
 import Debug.Trace (traceM)
-
-
-data Tournament s a =
-  Battle
-  {
-    tnmQualifi1 :: STRef s (Tournament s a),
-    tnmQualifi2 :: STRef s (Tournament s a),
-    tnmWinner :: Maybe a
-  }
-  | Player a
-
-
-newPlayer x = newSTRef $ Player x
-
-newBattle q1 q2 = newSTRef $ Battle q1 q2 Nothing
-
-winner tr = do
-  t <- readSTRef tr
-  case t of
-    Player x -> return $ Just x
-    Battle _ _ x -> return x
-
-finalists tr = do
-  t <- readSTRef tr
-  case t of
-    Battle qr1 qr2 _ -> (,) <$> winner qr1 <*> winner qr2
-    _ -> fail "finalists: specified data is not battle."
-
-setWinner tr n = do
-  t <- readSTRef tr
-  case t of
-    Battle _ _ Nothing -> do
-      w <- winner $ choose t -- get winner of specified qualification
-      case w of
-        Just (x) -> writeSTRef tr $ t {tnmWinner = Just x}
-        Nothing -> fail $ "setWinner: winner of qualification " ++ show n ++ " is not sure."
-    _ -> fail "setWinner: winner already exists."
-  where
-    choose b = case n of
-      1 -> tnmQualifi1 b
-      2 -> tnmQualifi2 b
-      _ -> error "setWinner: choose 1 or 2."
-
-graph tr = T.unpack <$> f tr 0
-  where
-    f tr d = do
-      t <- readSTRef tr
-      case t of
-        Player x -> return $ T.replicate d "  |" +++ "-- " +++ T.pack (show x) +++ "\n"
-        Battle qr1 qr2 w -> do
-          t1 <- f qr1 (d+1)
-          t2 <- f qr2 (d+1)
-          return $
-            T.replicate d "  |" +++ "--|" +++ winnerName w +++ "\n"
-            +++ t1 +++ t2 +++ T.replicate d "  |" +++ "\n"
-            
-    winnerName (Just x) = "(" +++ T.pack (show x) +++ ")"
-    winnerName Nothing = ""
-
-    (+++) = T.append
-
 
 
 newtype S = S String
 instance Show S where show (S s) = s
+
+
+
+fplayer n = TF.player (S n)
+
+{--
+--|[1](たかまさ)
+  |--|[2](ゆづき)
+  |  |-- [4]ゆづき
+  |  |-- [5]はな
+  |
+  |-- [3]たかまさ
+
+--}
+ftest1 =
+  let m = TF.toMap $
+          (
+            fplayer "ゆづき"
+            ><
+            fplayer "はな"
+          )        
+          ><
+          fplayer "たかまさ" 
+--  in TF.graph m
+  in TF.graph $ m ==> 4 ==> 3
+
+
+{--
+--|[1](ゆみ)
+  |--|[2](ゆづき)
+  |  |-- [4]ゆづき
+  |  |-- [5]はな
+  |
+  |--|[3](ゆみ)
+  |  |-- [6]たかまさ
+  |  |-- [7]ゆみ
+  |
+
+--}
+ftest2 =
+  let m = TF.toMap $
+          (
+            fplayer "ゆづき"
+            ><
+            fplayer "はな"
+          )
+          ><
+          (
+            fplayer "たかまさ"
+            ><
+            fplayer "ゆみ"
+          )
+--  in TF.graph m
+  in TF.graph $ m ==> 4 ==> 7 ==> 3
+
+
+{--
+--|[1](じろう)
+  |--|[2](じろう)
+  |  |-- [4]たろう
+  |  |-- [5]じろう
+  |
+  |--|[3](はな)
+  |  |--|[6](はな)
+  |  |  |-- [12]ゆづき
+  |  |  |-- [13]はな
+  |  |
+  |  |--|[7](たかまさ)
+  |  |  |-- [14]たかまさ
+  |  |  |-- [15]ゆみ
+  |  |
+  |
+
+--}
+ftest3 =
+  let m = TF.toMap $
+          (
+            fplayer "たろう"
+            ><
+            fplayer "じろう"
+          )
+          ><
+          (
+            (
+              fplayer "ゆづき"
+              ><
+              fplayer "はな"
+            )
+            ><
+            (
+              fplayer "たかまさ"
+              ><
+              fplayer "ゆみ"
+            )
+          )
+--  in TF.graph m
+  in TF.graph $ m ==> 14 ==> 13 ==> 6 ==> 5 ==> 2
+
+
+fmain = putStr ftest1 >> putStr ftest2 >> putStr ftest3
+
+
 
 {--
 --|(たかまさ)
@@ -82,24 +126,21 @@ instance Show S where show (S s) = s
   |-- たかまさ
 
 --}
-test1 = stToIO $ do
+ptest1 = stToIO $ do
 
-  yuzu <- newPlayer $ S "ゆづき"
-  hana <- newPlayer $ S "はな"
-  taka <- newPlayer $ S "たかまさ"
+  yuzu <- TP.newPlayer $ S "ゆづき"
+  hana <- TP.newPlayer $ S "はな"
+  taka <- TP.newPlayer $ S "たかまさ"
   
-  semiFin <- newBattle yuzu hana
-  fin     <- newBattle semiFin taka
---  graph fin >>= traceM
+  semiFin <- TP.newBattle yuzu hana
+  fin     <- TP.newBattle semiFin taka
 
-  setWinner semiFin 1
---  graph fin >>= traceM
-
-  setWinner fin 2
-  graph fin >>= traceM
-
-  finalists fin >>= traceM . ("finalists: " ++) . show
-  winner fin    >>= traceM . ("winner: " ++) . show
+  TP.setWinner semiFin 1
+  TP.setWinner fin 2
+  TP.graph fin >>= traceM
+  
+  TP.finalists fin >>= traceM . ("finalists: " ++) . show
+  TP.winner fin    >>= traceM . ("winner: " ++) . show
   traceM "\n\n" 
 
   
@@ -115,34 +156,33 @@ test1 = stToIO $ do
   |
 
 --}
-test2 = stToIO $ do
+ptest2 = stToIO $ do
 
-  yuzu <- newPlayer $ S "ゆづき"
-  hana <- newPlayer $ S "はな"
-  taka <- newPlayer $ S "たかまさ"
-  yumi <- newPlayer $ S "ゆみ"
+  yuzu <- TP.newPlayer $ S "ゆづき"
+  hana <- TP.newPlayer $ S "はな"
+  taka <- TP.newPlayer $ S "たかまさ"
+  yumi <- TP.newPlayer $ S "ゆみ"
 
-  semiFin1 <- newBattle yuzu hana
-  semiFin2 <- newBattle taka yumi
-  fin <- newBattle semiFin1 semiFin2
---  graph fin >>= traceM
+  semiFin1 <- TP.newBattle yuzu hana
+  semiFin2 <- TP.newBattle taka yumi
+  fin <- TP.newBattle semiFin1 semiFin2
   
-  setWinner semiFin1 1
---  graph fin >>= traceM
-  
-  setWinner semiFin2 2
---  graph fin >>= traceM
-  
-  setWinner fin 2
-  graph fin >>= traceM
+  TP.setWinner semiFin1 1
+  TP.setWinner semiFin2 2
+  TP.setWinner fin 2
+  TP.graph fin >>= traceM
 
-  finalists fin >>= traceM . ("finalists: " ++) . show
-  winner fin    >>= traceM . ("winner: " ++) . show
+  TP.finalists fin >>= traceM . ("finalists: " ++) . show
+  TP.winner fin    >>= traceM . ("winner: " ++) . show
   traceM "\n\n" 
 
 
 {--
---|(じろう)
+--|(はな)
+  |--|(じろう)
+  |  |-- たろう
+  |  |-- じろう
+  |
   |--|(はな)
   |  |--|(はな)
   |  |  |-- ゆづき
@@ -153,68 +193,38 @@ test2 = stToIO $ do
   |  |  |-- ゆみ
   |  |
   |
-  |--|(じろう)
-  |  |-- たろう
-  |  |-- じろう
-  |
 
 --}
-test3 = stToIO $ do
+ptest3 = stToIO $ do
 
-  yuzu <- newPlayer $ S "ゆづき"
-  hana <- newPlayer $ S "はな"
-  taka <- newPlayer $ S "たかまさ"
-  yumi <- newPlayer $ S "ゆみ"
-  taro <- newPlayer $ S "たろう"
-  jiro <- newPlayer $ S "じろう"
+  taro <- TP.newPlayer $ S "たろう"
+  jiro <- TP.newPlayer $ S "じろう"
+  yuzu <- TP.newPlayer $ S "ゆづき"
+  hana <- TP.newPlayer $ S "はな"
+  taka <- TP.newPlayer $ S "たかまさ"
+  yumi <- TP.newPlayer $ S "ゆみ"
 
-  semisemiFin1 <- newBattle yuzu hana
-  semisemiFin2 <- newBattle taka yumi
-  semiFin1 <- newBattle semisemiFin1 semisemiFin2
-  semiFin2 <- newBattle taro jiro
-  fin <- newBattle semiFin1 semiFin2
---  graph fin >>= traceM
+  semiFin1 <- TP.newBattle taro jiro
+  semisemiFin1 <- TP.newBattle yuzu hana
+  semisemiFin2 <- TP.newBattle taka yumi
+  semiFin2 <- TP.newBattle semisemiFin1 semisemiFin2
+  fin <- TP.newBattle semiFin1 semiFin2
   
-  setWinner semisemiFin1 2
---  graph fin >>= traceM
-  
-  setWinner semisemiFin2 1
---  graph fin >>= traceM
-  
-  setWinner semiFin1 1
---  graph fin >>= traceM
-  
-  setWinner semiFin2 2
---  graph fin >>= traceM
-  
-  setWinner fin 2
-  graph fin >>= traceM
+  TP.setWinner semiFin1 2
+  TP.setWinner semisemiFin1 2
+  TP.setWinner semisemiFin2 1
+  TP.setWinner semiFin2 1
+  TP.setWinner fin 2
+  TP.graph fin >>= traceM
 
-  finalists fin >>= traceM . ("finalists: " ++) . show
-  winner    fin >>= traceM . ("winner: " ++) . show
+  TP.finalists fin >>= traceM . ("finalists: " ++) . show
+  TP.winner    fin >>= traceM . ("winner: " ++) . show
   traceM "\n\n" 
 
 
-test1' :: IO ()
-test1' = do
-
-  yuzu <- stToIO $ newPlayer $ S "ゆづき"
-  hana <- stToIO $ newPlayer $ S "はな"
-  taka <- stToIO $ newPlayer $ S "たかまさ"
-  
-  semiFin <- stToIO $ newBattle yuzu hana
-  fin     <- stToIO $ newBattle semiFin taka
---  stToIO (graph fin) >>= putStrLn
-
-  stToIO $ setWinner semiFin 1
---  stToIO (graph fin) >>= putStrLn
-
-  stToIO $ setWinner fin 2
-  stToIO (graph fin) >>= putStrLn
-
-  stToIO (finalists fin) >>= putStrLn . ("finalists: " ++) . show
-  stToIO (winner fin)    >>= putStrLn . ("winner: " ++) . show
-  putStrLn "\n\n" 
+pmain = ptest1 >> ptest2 >> ptest3
 
 
-main = test1 >> test2 >> test3
+
+main = fmain >> pmain
+
