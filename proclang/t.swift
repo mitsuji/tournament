@@ -1,6 +1,8 @@
 import Glibc
 
-protocol Tournament {}
+protocol Tournament {
+	 func graph(d:Int) -> String
+}
 
 class Battle: Tournament {
       var qualifi0: Tournament
@@ -10,12 +12,38 @@ class Battle: Tournament {
       	   self.qualifi0 = qualifi0
       	   self.qualifi1 = qualifi1
       }
+      func graph(d:Int) -> String {
+      	   var s = ""
+	   
+	   for _ in 0..<d {
+	       s += "  |"
+           }
+           s += "--|" + "\n"
+	   
+	   s += qualifi0.graph(d+1)
+	   s += qualifi1.graph(d+1)
+
+	   for _ in 0..<d {
+	       s += "  |"
+           }
+           s += "\n"
+
+	   return s
+      }
 }
 
 class Player: Tournament {
       var name: String
       init ( name: String) {
       	   self.name = name
+      }
+      func graph(d:Int) -> String {
+      	   var s = ""
+	   for _ in 0..<d {
+	       s += "  |"
+           }
+           s += "-- " + name + "\n"
+	   return s
       }
 }
 
@@ -25,7 +53,7 @@ func *(q0:Tournament, q1:Tournament) -> Tournament {
 }
 
 
-var fin =
+let fin =
     	(
 		Player(name:"ゆづき")
 		*
@@ -35,4 +63,5 @@ var fin =
 	Player(name:"たかまさ")
 
 
-print("こんにちは")
+print(fin.graph(0))
+
