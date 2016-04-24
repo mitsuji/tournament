@@ -4,7 +4,7 @@
 //
 
 #include <typeinfo>
-#include <stdio.h>
+#include <cstdio>
 
 struct tournament {
   virtual ~tournament() {}

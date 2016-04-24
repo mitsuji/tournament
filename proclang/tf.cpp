@@ -4,7 +4,7 @@
 //
 
 #include <typeinfo>
-#include <stdio.h>
+#include <cstdio>
 #include <map>
 
 struct tournament {
@@ -33,49 +33,53 @@ const battle operator * (const tournament& l, const tournament& r)
   return battle(l,r);
 }
 
-std::map<int,const char*> toMap_ (const tournament& t, int id){
-  std::map<int,const char*> m;
+typedef std::map<int,const char*> map_t;
+
+const map_t toMap_ (const tournament& t, int id){
+  map_t m;
   if(typeid(t) == typeid(const player&))
     {
       const player& p = dynamic_cast<const player&>(t);
-      m.insert(std::pair<int,const char*>(id,p.name));
+      //      m.insert(std::pair<int,const char*>(id,p.name));
+      m[id] = p.name;
     }
   else if(typeid(t) == typeid(const battle&))
     {
       const battle& b = dynamic_cast<const battle&>(t);
-      m.insert(std::pair<int,const char*>(id,NULL));
-      const std::map<int,const char*>& m0 = toMap_(b.qualifi0, (id << 1));
-      const std::map<int,const char*>& m1 = toMap_(b.qualifi1, (id << 1)+1);
+      //      m.insert(std::pair<int,const char*>(id,NULL));
+      m[id] = NULL;
+      const map_t& m0 = toMap_(b.qualifi0, (id << 1));
+      const map_t& m1 = toMap_(b.qualifi1, (id << 1)+1);
       m.insert(m0.begin(),m0.end());
       m.insert(m1.begin(),m1.end());
     }
   return m;
 }
-std::map<int,const char*> toMap (const tournament& t){
+const map_t toMap (const tournament& t){
   return toMap_(t,1);
 }
 
 
-std::map<int,const char*> setWinner(const std::map<int,const char*>& m, int id){
-  std::map<int, const char*>::const_iterator xit = m.find(id);
+const map_t setWinner(const map_t& m, int id){
+  const map_t::const_iterator xit = m.find(id);
   const char* x = (*xit).second;
-  std::map<int,const char*> nm(m);
+  map_t nm(m);
   //  nm.insert(std::pair<int,const char*>((id >> 1),x));
   nm[(id >> 1)] = x;
   return nm;
 }
 
-const std::map<int,const char*> operator >> (const std::map<int,const char*>& m, int id)
+const map_t operator >> (const map_t& m, int id)
 {
   return setWinner(m,id);
 }
 
 
-void graph_( const std::map<int,const char*>& m, int id, int d) {
-  std::map<int, const char*>::const_iterator xit = m.find(id);
+void graph_( const map_t& m, int id, int d) {
+  const map_t::const_iterator xit = m.find(id);
   const char* x = (*xit).second;
-  std::map<int, const char*>::const_iterator qit0 = m.find((id << 1));
-  std::map<int, const char*>::const_iterator qit1 = m.find((id << 1)+1);
+  const map_t::const_iterator qit0 = m.find((id << 1));
+  const map_t::const_iterator qit1 = m.find((id << 1)+1);
   if(qit0 != m.end() && qit1 != m.end()){
 
       for(int i=0; i<d; ++i){ printf("  |"); }
@@ -99,7 +103,7 @@ void graph_( const std::map<int,const char*>& m, int id, int d) {
 
   }
 }
-void graph( const std::map<int,const char*>& m) {
+void graph( const map_t& m) {
   graph_(m,1,0);
 }
 
@@ -110,7 +114,7 @@ int main ( int argc, char** argv)
 
   {
 
-    const std::map<int, const char*>& m = toMap(
+    const map_t& m = toMap(
 						(
 						 player("ゆづき")
 						 *
@@ -124,7 +128,7 @@ int main ( int argc, char** argv)
   }
 
   {
-    const std::map<int, const char*>& m = toMap(
+    const map_t& m = toMap(
 						(
 						 player("ゆづき")
 						 *
@@ -142,7 +146,7 @@ int main ( int argc, char** argv)
   }
 
   {
-    const std::map<int, const char*>& m = toMap(
+    const map_t& m = toMap(
 						(
 						 player("たろう")
 						 *
