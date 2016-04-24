@@ -7,11 +7,7 @@
 #include <stdio.h>
 
 struct tournament {
-#ifndef __GNUC__ // for gcc's strange behavior
   virtual ~tournament() {}
-#else
-  virtual void marker() const = 0;
-#endif
 };
 
 struct player : tournament {
@@ -20,9 +16,6 @@ struct player : tournament {
     :name(name)
   {}
   virtual ~player() {}
-#ifdef __GNUC__ // for gcc's strange behavior
-  virtual void marker() const {}
-#endif
 };
 
 struct battle : tournament {
@@ -33,9 +26,6 @@ struct battle : tournament {
     :qualifi0(qualifi0), qualifi1(qualifi1), winner_name(NULL)
   {}
   virtual ~battle() {}
-#ifdef __GNUC__ // for gcc's strange behavior
-  virtual void marker() const {}
-#endif
 };
 
 const battle operator * (const tournament& l, const tournament& r)
@@ -86,6 +76,7 @@ int main ( int argc, char** argv)
     player yuzu("ゆづき");
     player hana("はな");
     player taka("たかまさ");
+    
     battle semiFin(yuzu,hana);
     battle fin(semiFin,taka);
 
@@ -100,6 +91,7 @@ int main ( int argc, char** argv)
     player hana("はな");
     player taka("たか");
     player yumi("ゆみ");
+
     battle semiFin1(yuzu,hana);
     battle semiFin2(taka,yumi);
     battle fin(semiFin1,semiFin2);
@@ -118,6 +110,7 @@ int main ( int argc, char** argv)
     player hana("はな");
     player taka("たかまさ");
     player yumi("ゆみ");
+
     battle semiFin1(taro,jiro);
     battle semisemiFin1(yuzu,hana);
     battle semisemiFin2(taka,yumi);
@@ -133,59 +126,4 @@ int main ( int argc, char** argv)
     graph(fin);
   }
 
-
-  
-  /*
-  {
-    const tournament& fin = (
-			     player("ゆづき")
-			     *
-			     player("はな")
-			    )
-                            *
-                            player("たかまさ");
-
-    graph(fin);
-  }
-
-  {
-    const tournament& fin = (
-			     player("ゆづき")
-			     *
-			     player("はな")
-			    )
-                            *
-                            (
-                             player("ゆみ")
-			     *
-                             player("たかまさ")
-			    );
-
-    graph(fin);
-  }
-
-  {
-    const tournament& fin = (
-			     player("たろう")
-			     *
-			     player("じろう")
-			    )
-                            *
-                            (
-			     (
-			      player("ゆづき")
-			      *
-			      player("はな")
-			     )
-			     *
-			     (
-			      player("たかまさ")
-			      *
-			      player("ゆみ")
-			     )
-			    );
-    graph(fin);
-  }
-  */
-  
 }  
