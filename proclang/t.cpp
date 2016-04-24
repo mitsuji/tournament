@@ -38,30 +38,39 @@ struct battle : tournament {
 #endif
 };
 
-const battle operator*(const tournament& l, const tournament& r)
+const battle operator * (const tournament& l, const tournament& r)
 {
   return battle(l,r);
 }
 
+void setWinner(battle& t, const player& p){
+  t.winner_name = p.name;
+}
 
 void graph_( const tournament& t, int d) {
   if(typeid(t) == typeid(const player&))
     {
       const player& p = dynamic_cast<const player&>(t);
-      int i;
-      for(i=0; i<d; ++i){ printf("  |"); }
+      
+      for(int i=0; i<d; ++i){ printf("  |"); }
       printf("-- ");
       printf("%s\n",p.name);
     }
   else if(typeid(t) == typeid(const battle&))
     {
       const battle& b = dynamic_cast<const battle&>(t);
-      int i;
-      for(i=0; i<d; ++i){ printf("  |"); }
-      printf("--|%s\n","");
+
+      for(int i=0; i<d; ++i){ printf("  |"); }
+      if(b.winner_name) {
+	printf("--|(%s)\n", b.winner_name);
+      } else {
+	printf("--|\n");
+      }
+      
       graph_(b.qualifi0,d+1);
       graph_(b.qualifi1,d+1);
-      for(i=0; i<d; ++i){ printf("  |"); }
+      
+      for(int i=0; i<d; ++i){ printf("  |"); }
       printf("\n");
     }
 }
@@ -72,7 +81,61 @@ void graph( const tournament& t) {
 
 int main ( int argc, char** argv)
 {
+  
+  {
+    player yuzu("ゆづき");
+    player hana("はな");
+    player taka("たかまさ");
+    battle semiFin(yuzu,hana);
+    battle fin(semiFin,taka);
 
+    setWinner(semiFin, hana);
+    setWinner(fin, taka);
+    
+    graph(fin);
+  }
+
+  {
+    player yuzu("ゆづき");
+    player hana("はな");
+    player taka("たか");
+    player yumi("ゆみ");
+    battle semiFin1(yuzu,hana);
+    battle semiFin2(taka,yumi);
+    battle fin(semiFin1,semiFin2);
+
+    setWinner(semiFin1, yuzu);
+    setWinner(semiFin2, yumi);
+    setWinner(fin, yumi);
+    
+    graph(fin);
+  }
+
+  {
+    player taro("たろう");
+    player jiro("じろう");
+    player yuzu("ゆづき");
+    player hana("はな");
+    player taka("たかまさ");
+    player yumi("ゆみ");
+    battle semiFin1(taro,jiro);
+    battle semisemiFin1(yuzu,hana);
+    battle semisemiFin2(taka,yumi);
+    battle semiFin2(semisemiFin1,semisemiFin2);
+    battle fin(semiFin1,semiFin2);
+
+    setWinner(semiFin1, jiro);
+    setWinner(semisemiFin1, hana);
+    setWinner(semisemiFin2, taka);
+    setWinner(semiFin2, hana);
+    setWinner(fin, hana);
+    
+    graph(fin);
+  }
+
+
+  
+  /*
   {
     const tournament& fin = (
 			     player("ゆづき")
@@ -123,6 +186,6 @@ int main ( int argc, char** argv)
 			    );
     graph(fin);
   }
-
+  */
   
 }  
