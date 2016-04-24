@@ -7,10 +7,10 @@
 #include <stdio.h>
 
 struct tournament {
-#ifndef __GNUC__   // for gcc's strange behavior
+#ifndef __GNUC__ // for gcc's strange behavior
   virtual ~tournament() {}
 #else
-  virtual void f() const = 0;
+  virtual void marker() const = 0;
 #endif
 };
 
@@ -21,7 +21,7 @@ struct player : tournament {
   {}
   virtual ~player() {}
 #ifdef __GNUC__ // for gcc's strange behavior
-  virtual void f() const {}
+  virtual void marker() const {}
 #endif
 };
 
@@ -34,7 +34,7 @@ struct battle : tournament {
   {}
   virtual ~battle() {}
 #ifdef __GNUC__ // for gcc's strange behavior
-  virtual void f() const {}
+  virtual void marker() const {}
 #endif
 };
 
