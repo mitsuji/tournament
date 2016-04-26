@@ -22,14 +22,10 @@ newBattle q0 q1 = newSTRef $ Battle q0 q1 Nothing
 
 setWinner :: STRef s (Tournament s a) -> STRef s (Tournament s a) -> ST s ()
 setWinner br pr = do
-  b <- readSTRef br
-  case b of
-    Battle q0 q1 Nothing -> do
-      p <- readSTRef pr
-      case p of
-        Player x -> writeSTRef br $ Battle q0 q1 (Just x)
-        _ -> fail $ "setWinner: winner must be player."
-    _ -> fail "setWinner: winner already exists."
+  bp <- (,) <$> readSTRef br <*> readSTRef pr
+  case bp of
+    (Battle q0 q1 Nothing, Player x) -> writeSTRef br $ Battle q0 q1 (Just x)
+    _-> fail $ "setWinner: winner must be a player."
 
 
 graph :: Show a => STRef s (Tournament s a) -> ST s String
