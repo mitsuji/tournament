@@ -74,8 +74,8 @@ const map_t toMap (const tournament& t){
 
 
 const map_t setWinner(const map_t& m, int id){
-  const map_t::const_iterator xit = m.find(id);
-  const char* name = (*xit).second;
+  const map_t::const_iterator it_name = m.find(id);
+  const char* name = (*it_name).second;
   map_t n(m);
   n[upper_id(id)] = name;
   return n;

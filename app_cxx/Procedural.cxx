@@ -32,12 +32,6 @@ struct battle : tournament {
 };
 
 
-const battle operator * (const tournament& t1, const tournament& t2)
-{
-  return battle(t1,t2);
-}
-
-
 void setWinner(battle& t, const player& p){
   t.winner_name = p.name;
 }
