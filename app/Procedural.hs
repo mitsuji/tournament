@@ -2,10 +2,12 @@
 
 module Main where
 
-import qualified Data.Text as T
-import Control.Monad.ST (ST,stToIO)
+import Control.Monad.ST (ST,runST)
 import Data.STRef (STRef,newSTRef,readSTRef,writeSTRef)
-import Debug.Trace (traceM)
+
+import Data.ByteString.Builder (toLazyByteString,char7,string7,stringUtf8,intDec)
+import Data.Monoid ((<>),mempty)
+import qualified Data.ByteString.Lazy as LBS
 
 
 data Tournament s a = Player a
@@ -28,26 +30,24 @@ setWinner br pr = do
     _-> fail $ "setWinner: winner must be a player."
 
 
-graph :: Show a => STRef s (Tournament s a) -> ST s String
-graph tr = T.unpack <$> f tr 0
+graph :: Show a => STRef s (Tournament s a) -> ST s LBS.ByteString
+graph tr = toLazyByteString <$> f tr 0
   where
     f tr d = do
       t <- readSTRef tr
       case t of
         Player x ->
-          return $ T.replicate d "  |" +++ "-- " +++ T.pack (show x) +++ "\n"
+          return $ mconcat (replicate d $ string7 "  |") <> string7 "-- " <> stringUtf8 (show x) <> char7 '\n'
         Battle qr0 qr1 mx -> do
           t0 <- f qr0 (d+1)
           t1 <- f qr1 (d+1)
           return $
-            T.replicate d "  |" +++ "--|" +++ winnerName mx +++ "\n"
-            +++ t0 +++ t1 +++ T.replicate d "  |" +++ "\n"
+            mconcat (replicate d $ string7 "  |") <> string7 "--|" <> stringUtf8 (winnerName mx) <> char7 '\n'
+            <> t0 <> t1 <> mconcat (replicate d $ string7 "  |") <> char7 '\n'
             
-    winnerName (Just x) = "(" +++ T.pack (show x) +++ ")"
+    winnerName (Just x) = "(" ++ show x ++ ")"
     winnerName Nothing = ""
     
-    (+++) = T.append
-
 
 
 
@@ -63,7 +63,7 @@ instance Show S where show (S s) = s
   |-- たかまさ
 
 --}
-test1 = stToIO $ do
+test1 = runST $ do
 
   yuzu <- newPlayer $ S "ゆづき"
   hana <- newPlayer $ S "はな"
@@ -75,7 +75,7 @@ test1 = stToIO $ do
   setWinner semiFin hana
   setWinner fin taka
   
-  graph fin >>= traceM
+  graph fin
 
   
 {--
@@ -90,7 +90,7 @@ test1 = stToIO $ do
   |
 
 --}
-test2 = stToIO $ do
+test2 = runST $ do
 
   yuzu <- newPlayer $ S "ゆづき"
   hana <- newPlayer $ S "はな"
@@ -105,7 +105,7 @@ test2 = stToIO $ do
   setWinner semiFin2 yumi
   setWinner fin yumi
   
-  graph fin >>= traceM
+  graph fin
 
 
 {--
@@ -126,7 +126,7 @@ test2 = stToIO $ do
   |
 
 --}
-test3 = stToIO $ do
+test3 = runST $ do
 
   taro <- newPlayer $ S "たろう"
   jiro <- newPlayer $ S "じろう"
@@ -147,8 +147,8 @@ test3 = stToIO $ do
   setWinner semiFin2 hana
   setWinner fin hana
   
-  graph fin >>= traceM
+  graph fin
 
 
 
-main = test1 >> test2 >> test3
+main = LBS.putStr test1 >> LBS.putStr test2 >> LBS.putStr test3
