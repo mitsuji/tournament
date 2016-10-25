@@ -4,8 +4,11 @@ module Main where
 
 import qualified Data.Map.Strict as Map
 import Data.Bits (shiftR,shiftL)
-import qualified Data.Text as T
 import Data.Maybe (fromJust)
+
+import Data.ByteString.Builder (toLazyByteString,char7,string7,stringUtf8,intDec)
+import Data.Monoid ((<>),mempty)
+import qualified Data.ByteString.Lazy as LBS
 
 type ID = Int
 
@@ -33,8 +36,8 @@ setWinner i m = case Map.lookup i m of
 (==>) = flip setWinner
   
 
-graph :: Show a => Map.Map ID (Maybe a) -> String
-graph m = T.unpack $ f m 1 0
+graph :: Show a => Map.Map ID (Maybe a) -> LBS.ByteString
+graph m = toLazyByteString $ f m 1 0
   where
     f m i d =
       let
@@ -44,18 +47,17 @@ graph m = T.unpack $ f m 1 0
                   
       in case (q0,q1) of
         (Nothing, Nothing) ->
-          T.replicate d "  |" +++ "-- " +++ "[" +++ T.pack (show i) +++ "]" +++ playerName mx +++ "\n"
+          mconcat (replicate d $ string7 "  |") <> string7 "-- " <> char7 '[' <> intDec i <> char7 ']' <> stringUtf8 (playerName mx) <> char7 '\n'
         _ ->
-          T.replicate d "  |" +++ "--|" +++ "[" +++ T.pack (show i) +++ "]" +++ winnerName mx +++ "\n"
-          +++ f m lowerID0 (d+1) +++ f m lowerID1 (d+1)
-          +++ T.replicate d "  |" +++ "\n"
+          mconcat (replicate d $ string7 "  |") <> string7 "--|" <> char7 '[' <> intDec i <> char7 ']' <> stringUtf8 (winnerName mx) <> char7 '\n'
+          <> f m lowerID0 (d+1) <> f m lowerID1 (d+1)
+          <> mconcat (replicate d $ string7 "  |") <> char7 '\n'
 
-    playerName mx = T.pack $ show $ fromJust mx
+    playerName mx = show $ fromJust mx
 
-    winnerName (Just x) = "(" +++ T.pack (show x) +++ ")"
+    winnerName (Just x) = "(" ++ show x ++ ")"
     winnerName Nothing = ""
 
-    (+++) = T.append
 
 
 
@@ -159,4 +161,4 @@ test3 =
   in graph $ m ==> 14 ==> 13 ==> 6 ==> 5 ==> 3
 
 
-main = putStr test1 >> putStr test2 >> putStr test3
+main = LBS.putStr test1 >> LBS.putStr test2 >> LBS.putStr test3
